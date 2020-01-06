@@ -1,0 +1,358 @@
+---
+title: "Network Analytics Amazon Products"
+author: "Christine Lim"
+date: "October 14, 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+
+#1. Download data
+Data is from Amazon, where the nodes in this
+network are Amazon products, including books, movies, and music. The edges in this network
+represent hyperlinks from a given product's landing page to the landing pages of those products
+most frequently co-purchased with the given product.
+
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+#set working directory
+setwd("C:/Users/cvlim/Desktop/NYU Coursework/Network Analytics/data/data")
+
+#import tables
+graph_complete<-read.table("graph_complete.txt")
+graph_subset_rank1000<-read.table("graph_subset_rank1000.txt")
+graph_subset_rank1000_cc<-read.table("graph_subset_rank1000_cc.txt")
+id_to_titles<-read.table("id_to_titles.txt", header=TRUE, fill=TRUE)
+
+
+```
+
+#2. Network Structure visualization
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#Download and install igraph
+
+#install.packages("igraph")
+library(igraph) #igraph is a library and R package for network analysis.
+```
+
+## 1) Plot the network using the information in the file graph_subset_rank1000.txt. Note that this is not the complete network, but only a subset of edges between top-ranked products. By visualizing the graph, you get an idea of the structure of the network you will be working on. In addition to plotting, comment on anything interesting you observe.
+
+
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+#Turn network into igraph object 
+net<-graph_from_data_frame(graph_subset_rank1000, directed=F) #undirected network for purposes of visualization
+
+
+#as_data_frame(net, what="edges") #edges 
+#as_data_frame(net, what="vertices") #nodes
+V(net) #nodes
+E(net) #edges
+
+vcount(net)
+ecount(net)
+
+```
+###There are 1,355 nodes and 2,611 edges
+
+</br>
+\newpage
+
+##1) Plotting the network of subset of edges between top-ranked products
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+#plot object auto layout
+ 
+#original plot
+plot(net, directed=F, 
+     vertex.label=NA, 
+     layout=layout.auto)
+
+#changing vertex size & color
+plot(net, directed=F,
+     vertex.size=7,
+     vertex.label=NA,
+     edge.arrow.size=5,
+     layout=layout.auto, edge.color="orange",
+     vertex.color="steelblue3", vertex.frame.color="grey90") 
+
+#decreasing vertex size to make edges more apparent
+plot(net, directed=F, 
+     vertex.size=3, 
+     vertex.label=NA, 
+     edge.arrow.size=5,
+     layout=layout.auto, edge.color="orange",
+     vertex.color="steelblue3", vertex.frame.color="grey90")  
+
+
+```
+For the auto layout, it looks like many of the nodes are self-referring on the outer sides of the network, while there are a few large clusters in the center.     
+In terms of visualization, changing the colors and vertex size makes it easier to identify the edges, since it is difficult to see them when the node size is bigger.     
+Further reducing the size of the vertices gave the plot a "zooming out" effect and made it much clearer easier it is to identify structures and shapes in the network.
+
+
+###Plot object using kamada kawai layout
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+
+
+#original size
+plot(net, directed=F, 
+     vertex.label=NA, 
+     edge.arrow.size=2, 
+     layout=layout.kamada.kawai)
+
+
+#reducing vertex size to 4
+plot(net, directed=F, 
+     vertex.size=4,
+     vertex.label=NA, 
+     edge.arrow.size=2, 
+     layout=layout.kamada.kawai, 
+     edge.color="orange", 
+     vertex.color="slategray2", 
+     vertex.frame.color="grey51")
+
+#further reducing vertex size to 2
+plot(net, directed=F, 
+     vertex.size=2,
+     vertex.label=NA, 
+     edge.arrow.size=2, 
+     layout=layout.kamada.kawai, 
+     edge.color="orange", 
+     vertex.color="slategray2", 
+     vertex.frame.color="grey51")
+
+```
+Here the clusters are much more distinct, and seem drawn together to form larger "shapes". Instead of having large clusters concentrated in the center, there looks like two major clusters on the top and botton of the network with nodes that are highly connected, while nodes with fewer edges are gravitated towards the center.   
+Again, reducing the size of the vertices made viewing the edges more apparent and allows us to visualize individual network structures more easily.
+
+
+###Playing with other layouts:
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#remove nodes that only refer to itself
+
+net2<-simplify(net, remove.multiple = T, remove.loops=T, 
+               edge.attr.comb = igraph_opt("edge.attr.comb") )
+
+plot(net2, directed=F, vertex.size=3, vertex.label=NA, 
+     edge.color="darkseagreen3", vertex.color="orangered",  vertex.frame.color="grey51")
+
+plot(net2, directed=F, vertex.size=5, vertex.label=NA, edge.arrow.size=2,
+     layout=layout_as_star, 
+     edge.color="darkseagreen3", vertex.color="orangered",  vertex.frame.color="grey51") #star layout
+
+
+plot(net2, directed=F, vertex.size=3, vertex.label=NA, edge.arrow.size=2,
+     layout=layout.graphopt, 
+     edge.color="darkseagreen3", vertex.color="orangered",  vertex.frame.color="grey51")  #graphopt layout
+
+plot(net2, directed=F, vertex.size=3, vertex.label=NA, edge.arrow.size=2,
+     layout=layout_with_lgl, 
+     edge.color="darkseagreen3", vertex.color="orangered",  vertex.frame.color="grey51")  #graphopt layout
+
+
+```
+
+
+
+##2) Now, use the file graph subset rank1000 cc.txt to plot only the largest connected component in the above network. 
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+net_cc<-graph_from_data_frame(graph_subset_rank1000_cc, directed=F)
+
+
+# as_data_frame(net_cc, what="edges") #edges 
+# as_data_frame(net_cc, what="vertices") #nodes
+V(net_cc) #nodes
+E(net_cc) #edges
+
+vcount(net_cc)
+ecount(net_cc)
+```
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#plot object auto layout
+plot(net_cc, directed=F,vertex.size=7, 
+     vertex.label=NA, 
+     edge.arrow.size=2, 
+     layout=layout.auto, 
+     edge.color="turquoise4", vertex.color="goldenrod2", vertex.frame.color="grey51")
+
+#reducing vertex size
+plot(net_cc, directed=F, 
+     vertex.size=5, 
+     vertex.label=NA, 
+     edge.arrow.size=2, 
+     layout=layout.auto, 
+     edge.color="turquoise4", vertex.color="goldenrod2", vertex.frame.color="grey51")
+
+#further reducing vertex size
+plot(net_cc, directed=F, 
+     vertex.size=3.5, 
+     vertex.label=NA, 
+     edge.arrow.size=2,
+     layout=layout.auto, 
+     edge.color="turquoise4", vertex.color="goldenrod2", vertex.frame.color="grey51")
+
+```
+Here we can see that all of the nodes are connected in the same "path", unlike the larger dataset where there were some completely unlinked clusters. Even though all the nodes are linked, they form sub-clusters where some edges are longer than others, giving an effect of branches off a main path of edges.    
+</br>
+
+\newpage
+
+###Plot subset using kamada kawai layout:
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#plot object kamada kawai
+plot(net_cc, directed=F, 
+     vertex.size=5, 
+     vertex.label=NA, edge.arrow.size=2, 
+     layout=layout.kamada.kawai,
+     edge.color="turquoise4", 
+     vertex.color="goldenrod2", 
+     vertex.frame.color="grey51") 
+
+plot(net_cc, directed=F, 
+     vertex.size=3.5, 
+     vertex.label=NA, edge.arrow.size=2, 
+     layout=layout.kamada.kawai,
+     edge.color="turquoise4", 
+     vertex.color="goldenrod2", 
+     vertex.frame.color="grey51")
+
+```
+We can see that using kamada kawai, the clusters are again more distict. There are also branches off a main "path", but the nodes on the "branches" seem more spread out.   
+
+
+
+\newpage
+
+
+#3. Data Analysis
+
+##1) Plot the out-degree distribution of our dataset (x-axis number of similar products, y-axis number of nodes)
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+#compute out-degree for each product
+out_degree<-as.data.frame(table(graph_complete$V1)) 
+#counting number of outgoing links from product a to product page b
+
+#out_degree2<-as.data.frame(table(graph_subset_rank1000$V1)) #using subset data
+
+```
+
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#plotting the distribution
+
+library(ggplot2)
+
+ggplot(out_degree, aes(x=Freq)) + 
+  geom_density(fill = "#00AFBB", colour = "#00AFBB", alpha = 0.1)
+
+#ggplot(out_degree2, aes(x=Freq)) + geom_density() #using subset data
+```
+There is a maximum of five outbound links showing that Amazon links on an outbound node page referring to other pages are limited to 5,  and the most frequent occurrence of links is 4. 
+
+
+
+##2)  Plot the in-degree distribution of our dataset (x-axis number of similar products, y-axis number of nodes).
+
+```{r}
+
+
+in_degree<-as.data.frame(table(graph_complete$V2)) #counting number of products(nodes) 
+
+```
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#plotting the in-degree distribution
+
+ggplot(in_degree, aes(x=Freq)) + 
+  geom_density(fill = "#FF6666", colour = "#FF6666", alpha = 0.1) 
+
+
+```
+The in-degree number of page references are much more skewed with a long tail, ranging from 0 to >500 references.      
+
+```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+# ggplot(in_degree, aes(x=Freq)) + geom_density()  +
+#   xlim(.1,100)
+#   
+
+```
+
+##3) Plotting in-degree on log scale
+```{r echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+
+#transforming the x-axis to log scale 
+# 
+# ggplot(in_degree, aes(x=Freq)) + geom_density() +
+#   scale_x_continuous(trans='log10') +
+#   xlim(.1,100)
+#   
+
+
+```
+
+###Transforming x-axis to log scale
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#Plotting transformation of x-axis to log scale
+ggplot(in_degree, aes(x=Freq)) + 
+  geom_density(fill = "#FF6666", colour = "#FF6666", alpha = 0.1) +
+  scale_x_log10()
+```
+
+###Replacing data with 0 to 0.1 and graphing
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+in_degree$log.Freq<-log(in_degree$Freq) #convert Frequency to log scale
+in_degree$log.Freq[in_degree$log.Freq==0]<-0.1 #replace 0 with .1
+
+ggplot(in_degree, aes(x=log.Freq)) + 
+  geom_density(fill = "#FF6666", colour = "#FF6666", alpha = 0.1) 
+
+```
+A node(page) can have a range from 0 to >500 amount of references to it, but from scaling the original graph to the log graph, it can be seen that the majority of nodes have under 10 inbound links.   
+
+
+
+##4) Compute the average number of inbound co-purchase links, the standard deviation, and the maximum. Comment on the result.
+```{r warning=FALSE, error=FALSE, message=FALSE}
+library(psych)
+
+describe(in_degree)
+
+```
+###Average number of inbound co-purchase links: 5.19
+###Standard deviation: 6.76
+###Maximum: 549
+
+###There is a large range in the frequency of links in the inbound co-purchase links. Since the max is so much greater than the mean, and the standard deviation is higher than the mean, there is a highly skewed distribution.   
+
+
+
+##5. Report the names of the 10 products with the most inbound co-purchase links.
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+#names of the top 10 products with most inbound co-purchase links
+
+library(dplyr)
+
+top_10<-head(in_degree[order(in_degree$Freq, decreasing=T),], n=10)
+names(top_10)[1]<-"id"
+
+top_10_products<-merge(top_10, id_to_titles, by="id")
+top_10_products<-top_10_products[order(-top_10_products$Freq),]
+top_10_products$title
+```
+
